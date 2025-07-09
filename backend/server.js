@@ -160,7 +160,20 @@ app.get('/device/:code', async (req, res) => {
   try {
     const device = await prisma.device.findUnique({ where: { code } });
     if (!device) {
-      return res.status(404).send('<h1 class="text-center mt-10 text-xl text-red-600">ไม่พบอุปกรณ์</h1>');
+      return res.status(404).send(`
+        <!DOCTYPE html>
+        <html lang="th">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <script src="https://cdn.tailwindcss.com"></script>
+            <title>ไม่พบอุปกรณ์</title>
+          </head>
+          <body class="bg-red-50 text-center pt-20 text-red-600 text-xl font-semibold">
+            ❌ ไม่พบอุปกรณ์ที่คุณต้องการค้นหา
+          </body>
+        </html>
+      `);
     }
 
     res.send(`
@@ -169,8 +182,8 @@ app.get('/device/:code', async (req, res) => {
         <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <script src="https://cdn.tailwindcss.com"></script>
           <title>ข้อมูลอุปกรณ์ - ${device.name}</title>
-          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
         </head>
         <body class="bg-gradient-to-br from-blue-50 to-white text-gray-800 font-sans">
           <div class="max-w-xl mx-auto p-6 mt-12 bg-white rounded-xl shadow-xl border border-gray-200">
@@ -202,9 +215,23 @@ app.get('/device/:code', async (req, res) => {
     `);
   } catch (err) {
     console.error('Error in GET /device/:code:', err);
-    res.status(500).send('<h1 class="text-center mt-10 text-red-600">เกิดข้อผิดพลาด</h1>');
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html lang="th">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <script src="https://cdn.tailwindcss.com"></script>
+          <title>เกิดข้อผิดพลาด</title>
+        </head>
+        <body class="bg-red-50 text-center pt-20 text-red-600 text-xl font-semibold">
+          ⚠️ เกิดข้อผิดพลาดในระบบ
+        </body>
+      </html>
+    `);
   }
 });
+
 
 
 // เริ่มเซิร์ฟเวอร์
