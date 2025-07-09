@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-1.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function DeviceManager() {
   const [devices, setDevices] = useState([]);
@@ -146,64 +146,106 @@ export default function DeviceManager() {
     }
   };
 
-  const handlePrint = (qrSrc, deviceInfo = {}) => {
-    const {
-      id = "",
-      brand = "",
-      model = "",
-      price = "",
-      createdAt = "",
-      details = "",
-      location = "",
-    } = deviceInfo;
+const handlePrint = (qrSrc, deviceInfo = {}) => {
+  const {
+    id = "",
+    brand = "",
+    model = "",
+    createdAt = "",
+    location = "",
+  } = deviceInfo;
 
-    const priceText =
-      price != null && price !== ""
-        ? `${Number(price).toLocaleString("th-TH")} บาท`
-        : "-";
-    const createdAtText = createdAt
-      ? new Date(createdAt).toLocaleDateString("th-TH", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
-      : "-";
-    const detailsText = details || "-";
-    const locationText = location || "-";
+  const locationText = location || "-";
+  const createdAtText = createdAt
+    ? new Date(createdAt).toLocaleDateString("th-TH", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "-";
 
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print QR Code</title>
-          <style>
-            body { font-family: sans-serif; margin: 30px; background: #fff; color: #333; }
-            .container { display: flex; gap: 20px; background: white; padding: 20px; border-radius: 10px; }
-            .qr { width: 300px; height: 300px; object-fit: contain; border: 1px solid #ccc; }
-            .info { font-size: 16px; line-height: 1.6; }
-            .label { font-weight: bold; min-width: 100px; display: inline-block; }
-            @media print { body { margin: 0; } }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <img src="${qrSrc}" class="qr" alt="QR Code" />
-            <div class="info">
-              <div><span class="label">เลขคุมครุภัณฑ์:</span> ${id}</div>
-              <div><span class="label">ยี่ห้อ:</span> ${brand}</div>
-              <div><span class="label">รุ่น:</span> ${model}</div>
-              <div><span class="label">ราคา:</span> ${priceText}</div>
-              <div><span class="label">วันลงบันทึก:</span> ${createdAtText}</div>
-              <div><span class="label">รายละเอียด:</span> ${detailsText}</div>
-              <div><span class="label">สถานที่จัดเก็บ:</span> ${locationText}</div>
-            </div>
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(`
+    <html>
+      <head>
+        <style>
+          @page {
+            size: 50mm 20mm;
+            margin: 0;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            width: 50mm;
+            height: 20mm;
+            box-sizing: border-box;
+            font-family: sans-serif;
+            background: #fff;
+          }
+          .container {
+            display: flex;
+            align-items: center;
+            padding: 2mm;
+            box-sizing: border-box;
+            width: 50mm;
+            height: 20mm;
+          }
+          .qr {
+            width: 16mm;
+            height: 16mm;
+            object-fit: contain;
+            margin-right: 2mm;
+          }
+          .info {
+            font-size: 2.3mm;
+            line-height: 1.2;
+            max-width: 30mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .label {
+            font-weight: bold;
+          }
+          @media print {
+            html, body {
+              margin: 0;
+              padding: 0;
+              width: 50mm;
+              height: 20mm;
+              box-sizing: border-box;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <img src="${qrSrc}" class="qr" alt="QR Code" />
+          <div class="info">
+            <div>${id}</div>
+            <div><span class="label">ยี่ห้อ:</span> ${brand}</div>
+            <div><span class="label">รุ่น:</span> ${model}</div>
+            <div><span class="label">ที่จัดเก็บ:</span> ${locationText}</div>
+            <div><span class="label">บันทึก:</span> ${createdAtText}</div>
           </div>
-          <script> window.onload = () => { window.print(); window.onafterprint = () => window.close(); }; </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-  };
+        </div>
+        <script>
+          window.onload = () => {
+            window.print();
+            window.onafterprint = () => window.close();
+          };
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
+
+
+
+
+
 
   const handleSort = (key) => {
     let direction = "asc";
@@ -251,6 +293,8 @@ export default function DeviceManager() {
   }, [devices, searchTerm, sortConfig]);
 
   return (
+    
+    
     <div className="px-4 py-6 font-sans">
       <h1 className="text-4xl font-bold text-center mb-10 text-gray-800 tracking-tight font-sans">
         📦 ระบบจัดการอุปกรณ์
@@ -607,6 +651,7 @@ export default function DeviceManager() {
 </tbody>
       </table>
     </div>
+
   </div>
 );
 
