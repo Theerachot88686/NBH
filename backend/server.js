@@ -213,4 +213,4 @@ res.send(`
 });
 
 // เริ่มเซิร์ฟเวอร์
-app.listen(5000, () => console.log('🚀 Server ready on http://localhost:5000'));
+app.listen(5000, () => console.log('🚀 Server ready on https://nbh-1.onrender.com'));
