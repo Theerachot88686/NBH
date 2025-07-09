@@ -24,22 +24,7 @@ app.get('/api/devices', async (req, res) => {
   }
 });
 
-// ดูข้อมูลจาก code (ใช้สำหรับ QR code)
-app.get('/api/devices/code/:code', async (req, res) => {
-  const code = req.params.code;
-  try {
-    const device = await prisma.device.findUnique({ where: { code } });
-    if (!device) {
-      return res.status(404).json({ error: 'ไม่พบอุปกรณ์' });
-    }
-    res.json(device);
-  } catch (error) {
-    console.error('Error in GET /api/devices/code/:code:', error);
-    res.status(500).json({ error: 'เกิดข้อผิดพลาดในเซิร์ฟเวอร์' });
-  }
-});
-
-// สร้าง QR Code ใหม่ให้กับอุปกรณ์
+// สร้าง QR Code ใหม่ให้กับอุปกรณ์ โดยใช้ id เป็นตัวระบุ
 app.post('/api/devices/:id/qrcode', async (req, res) => {
   const id = parseInt(req.params.id);
   try {
@@ -49,7 +34,7 @@ app.post('/api/devices/:id/qrcode', async (req, res) => {
       return res.status(404).json({ error: 'ไม่พบอุปกรณ์' });
     }
 
-    const qrData = `${baseUrl}/device/${device.code}`;
+    const qrData = `${baseUrl}/device/${id}`;  // ใช้ id ใน URL
     const qr = await QRCode.toDataURL(qrData);
 
     const updated = await prisma.device.update({
@@ -68,31 +53,25 @@ app.post('/api/devices/:id/qrcode', async (req, res) => {
   }
 });
 
-// แก้ไขข้อมูลอุปกรณ์ พร้อมอัปเดต QR code ถ้ารหัสเปลี่ยน
+// แก้ไขข้อมูลอุปกรณ์ พร้อมอัปเดต QR code
 app.put('/api/devices/:id', async (req, res) => {
   const id = parseInt(req.params.id);
-  const { name, code, brand, model, details } = req.body;
+  const { brand, model, price, createdAt, details } = req.body;
 
   try {
-    const existing = await prisma.device.findFirst({
-      where: {
-        code,
-        NOT: { id },
-      },
-    });
-
-    if (existing) {
-      return res
-        .status(400)
-        .json({ error: 'รหัสอุปกรณ์ซ้ำกับอุปกรณ์อื่น ไม่สามารถแก้ไขได้' });
-    }
-
-    const qrData = `${baseUrl}/device/${code}`;
+    const qrData = `${baseUrl}/device/${id}`;
     const qr = await QRCode.toDataURL(qrData);
 
     const updatedDevice = await prisma.device.update({
       where: { id },
-      data: { name, code, brand, model, details, qrCode: qr },
+      data: {
+        brand,
+        model,
+        price: price ? parseFloat(price) : null,
+        createdAt: createdAt ? new Date(createdAt) : undefined,
+        details,
+        qrCode: qr,
+      },
     });
 
     res.json(updatedDevice);
@@ -117,48 +96,45 @@ app.delete('/api/devices/:id', async (req, res) => {
 // เพิ่มอุปกรณ์ พร้อมสร้าง QR Code
 app.post('/api/devices', async (req, res) => {
   try {
-    const { name, code, brand, model, details } = req.body;
+    const { brand, model, price, createdAt, details } = req.body;
 
-    if (!name || !code || !brand || !model) {
+    if (!brand || !model) {
       return res.status(400).json({ error: 'กรุณาระบุข้อมูลให้ครบถ้วน' });
     }
 
-    const qrData = `${baseUrl}/device/${code}`;
-    const qr = await QRCode.toDataURL(qrData);
-
+    // สร้างอุปกรณ์ก่อน (ยังไม่มี qrCode)
     const device = await prisma.device.create({
       data: {
-        name,
-        code,
         brand,
         model,
+        price: price ? parseFloat(price) : null,
+        createdAt: createdAt ? new Date(createdAt) : undefined,
         details,
-        qrCode: qr || null,
       },
     });
 
-    res.json(device);
+    // สร้าง QR code หลังสร้าง device ได้ id แล้ว
+    const qrData = `${baseUrl}/device/${device.id}`;
+    const qr = await QRCode.toDataURL(qrData);
+
+    // อัพเดต qrCode ในฐานข้อมูล
+    const updatedDevice = await prisma.device.update({
+      where: { id: device.id },
+      data: { qrCode: qr },
+    });
+
+    res.json(updatedDevice);
   } catch (error) {
     console.error('Error in POST /api/devices:', error);
-    if (
-      error.code === 'P2002' &&
-      error.meta &&
-      error.meta.target.includes('code')
-    ) {
-      return res
-        .status(400)
-        .json({ error: 'รหัสอุปกรณ์ซ้ำ ไม่สามารถบันทึกได้' });
-    }
     res.status(500).json({ error: 'เกิดข้อผิดพลาดในเซิร์ฟเวอร์' });
   }
 });
 
-
-
-app.get('/device/:code', async (req, res) => {
-  const code = req.params.code;
+// แสดงข้อมูลอุปกรณ์แบบ HTML ตาม id
+app.get('/device/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
   try {
-    const device = await prisma.device.findUnique({ where: { code } });
+    const device = await prisma.device.findUnique({ where: { id } });
     if (!device) {
       return res.status(404).send(`
         <!DOCTYPE html>
@@ -183,18 +159,24 @@ app.get('/device/:code', async (req, res) => {
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
           <script src="https://cdn.tailwindcss.com"></script>
-          <title>ข้อมูลอุปกรณ์ - ${device.name}</title>
+          <title>ข้อมูลอุปกรณ์ - ${device.id}</title>
         </head>
         <body class="bg-gradient-to-br from-blue-50 to-white text-gray-800 font-sans">
           <div class="max-w-xl mx-auto p-6 mt-12 bg-white rounded-xl shadow-xl border border-gray-200">
             <h1 class="text-3xl font-bold text-blue-700 text-center mb-6">📦 ข้อมูลอุปกรณ์</h1>
 
             <div class="grid grid-cols-1 gap-4 text-base">
-              <p><span class="font-semibold text-gray-700">📛 ชื่อ:</span> ${device.name}</p>
-              <p><span class="font-semibold text-gray-700">🔢 รหัส:</span> ${device.code}</p>
               <p><span class="font-semibold text-gray-700">🏷️ ยี่ห้อ:</span> ${device.brand}</p>
               <p><span class="font-semibold text-gray-700">🛠️ รุ่น:</span> ${device.model}</p>
-              <p><span class="font-semibold text-gray-700">📝 รายละเอียด:</span> ${device.details || '-'}</p>
+              <p><span class="font-semibold text-gray-700">💵 ราคา:</span> ${
+                device.price != null ? device.price.toLocaleString() + ' บาท' : '-'
+              }</p>
+              <p><span class="font-semibold text-gray-700">📝 อื่นๆ:</span> ${device.details || '-'}</p>
+              <p><span class="font-semibold text-gray-700">🗓️ วันลงบันทึก:</span> ${new Date(device.createdAt).toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}</p>
             </div>
 
             ${
@@ -205,16 +187,12 @@ app.get('/device/:code', async (req, res) => {
                   </div>`
                 : ''
             }
-
-            <div class="mt-8 text-center">
-              <a href="/" class="inline-block text-blue-600 hover:text-blue-800 underline text-sm">← กลับหน้าหลัก</a>
-            </div>
           </div>
         </body>
       </html>
     `);
   } catch (err) {
-    console.error('Error in GET /device/:code:', err);
+    console.error('Error in GET /device/:id:', err);
     res.status(500).send(`
       <!DOCTYPE html>
       <html lang="th">
@@ -231,8 +209,6 @@ app.get('/device/:code', async (req, res) => {
     `);
   }
 });
-
-
 
 // เริ่มเซิร์ฟเวอร์
 app.listen(5000, () => console.log('🚀 Server ready on https://nbh-1.onrender.com'));
