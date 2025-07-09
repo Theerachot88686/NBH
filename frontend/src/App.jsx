@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 
+// ✅ ดึงจาก .env (ห้ามใส่ไว้ใน function)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onrender.com";
+
 export default function DeviceManager() {
   const [devices, setDevices] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onrender.com";
-  // ฟอร์มเพิ่มอุปกรณ์
+
   const [formVisible, setFormVisible] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -17,13 +19,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onre
   });
   const [formError, setFormError] = useState("");
 
-  // โหลดข้อมูลอุปกรณ์จาก backend
   const fetchDevices = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`${API_BASE_URL}/api/devices`);
-      
       if (!res.ok) throw new Error("โหลดข้อมูลล้มเหลว");
       const data = await res.json();
       setDevices(data);
@@ -38,31 +38,22 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onre
     fetchDevices();
   }, []);
 
-  // ฟังก์ชันกรองอุปกรณ์ตาม searchTerm
   const filteredDevices = devices.filter(
     (d) =>
       d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // ฟังก์ชัน handle form input change
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ส่งข้อมูลเพิ่มอุปกรณ์ พร้อมสร้าง QR code
   const handleAddDevice = async (e) => {
     e.preventDefault();
     setFormError("");
 
-    // Validate
-    if (
-      !formData.name.trim() ||
-      !formData.code.trim() ||
-      !formData.brand.trim() ||
-      !formData.model.trim()
-    ) {
+    if (!formData.name || !formData.code || !formData.brand || !formData.model) {
       setFormError("กรุณากรอกข้อมูลให้ครบทุกช่องที่จำเป็น");
       return;
     }
@@ -81,7 +72,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onre
         return;
       }
 
-      // เพิ่มข้อมูลใหม่ใน list และซ่อนฟอร์ม
       setDevices((prev) => [data, ...prev]);
       setFormVisible(false);
       setFormData({
@@ -100,7 +90,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onre
     <div style={{ maxWidth: 900, margin: "auto", padding: 20, fontFamily: "Arial" }}>
       <h1>ระบบจัดการอุปกรณ์</h1>
 
-      {/* Search box */}
       <input
         type="text"
         placeholder="ค้นหาชื่อ หรือ รหัสอุปกรณ์..."
@@ -115,7 +104,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onre
         }}
       />
 
-      {/* ปุ่มเพิ่มอุปกรณ์ */}
       <button
         onClick={() => setFormVisible(!formVisible)}
         style={{ marginBottom: 20, padding: "8px 16px", cursor: "pointer" }}
@@ -123,57 +111,22 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onre
         {formVisible ? "ยกเลิก" : "เพิ่มรายการใหม่"}
       </button>
 
-      {/* ฟอร์มเพิ่มอุปกรณ์ */}
       {formVisible && (
         <form onSubmit={handleAddDevice} style={{ marginBottom: 20, border: "1px solid #ccc", padding: 20 }}>
-          <div style={{ marginBottom: 10 }}>
-            <label>ชื่ออุปกรณ์*:</label>
-            <br />
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-              style={{ width: "100%", padding: 6 }}
-            />
-          </div>
-          <div style={{ marginBottom: 10 }}>
-            <label>รหัสอุปกรณ์*:</label>
-            <br />
-            <input
-              type="text"
-              name="code"
-              value={formData.code}
-              onChange={handleInputChange}
-              required
-              style={{ width: "100%", padding: 6 }}
-            />
-          </div>
-          <div style={{ marginBottom: 10 }}>
-            <label>ยี่ห้อ*:</label>
-            <br />
-            <input
-              type="text"
-              name="brand"
-              value={formData.brand}
-              onChange={handleInputChange}
-              required
-              style={{ width: "100%", padding: 6 }}
-            />
-          </div>
-          <div style={{ marginBottom: 10 }}>
-            <label>รุ่น*:</label>
-            <br />
-            <input
-              type="text"
-              name="model"
-              value={formData.model}
-              onChange={handleInputChange}
-              required
-              style={{ width: "100%", padding: 6 }}
-            />
-          </div>
+          {["name", "code", "brand", "model"].map((field) => (
+            <div style={{ marginBottom: 10 }} key={field}>
+              <label>{field === "name" ? "ชื่ออุปกรณ์" : field === "code" ? "รหัสอุปกรณ์" : field === "brand" ? "ยี่ห้อ" : "รุ่น"}*:</label>
+              <br />
+              <input
+                type="text"
+                name={field}
+                value={formData[field]}
+                onChange={handleInputChange}
+                required
+                style={{ width: "100%", padding: 6 }}
+              />
+            </div>
+          ))}
           <div style={{ marginBottom: 10 }}>
             <label>รายละเอียดเพิ่มเติม:</label>
             <br />
@@ -186,9 +139,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onre
             />
           </div>
 
-          {formError && (
-            <div style={{ color: "red", marginBottom: 10 }}>{formError}</div>
-          )}
+          {formError && <div style={{ color: "red", marginBottom: 10 }}>{formError}</div>}
 
           <button type="submit" style={{ padding: "8px 16px", cursor: "pointer" }}>
             บันทึกอุปกรณ์ และสร้าง QR Code
@@ -196,11 +147,9 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onre
         </form>
       )}
 
-      {/* แสดง error หรือ loading */}
       {error && <p style={{ color: "red" }}>{error}</p>}
       {loading && <p>กำลังโหลดข้อมูล...</p>}
 
-      {/* ตารางแสดงรายการอุปกรณ์ */}
       <table
         style={{
           width: "100%",
@@ -227,33 +176,18 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onre
               </td>
             </tr>
           )}
-
           {filteredDevices.map((d) => (
             <tr key={d.id}>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                {d.id}
-              </td>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                {d.code}
-              </td>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                {d.name}
-              </td>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                {d.brand}
-              </td>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                {d.model}
-              </td>
+              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{d.id}</td>
+              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{d.code}</td>
+              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{d.name}</td>
+              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{d.brand}</td>
+              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{d.model}</td>
               <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
                 {d.qrCode ? (
-                  <img
-                    src={d.qrCode}
-                    alt={`QR Code for ${d.code}`}
-                    width={80}
-                    height={80}
-                    style={{ objectFit: "contain" }}
-                  />
+                  <a href={`${API_BASE_URL.replace('/api', '')}/device/${d.code}`} target="_blank" rel="noopener noreferrer">
+                    <img src={d.qrCode} alt={`QR Code for ${d.code}`} width={80} height={80} style={{ objectFit: "contain" }} />
+                  </a>
                 ) : (
                   "-"
                 )}
