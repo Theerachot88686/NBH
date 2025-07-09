@@ -5,7 +5,7 @@ export default function DeviceManager() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onrender.com";
   // ฟอร์มเพิ่มอุปกรณ์
   const [formVisible, setFormVisible] = useState(false);
   const [formData, setFormData] = useState({
@@ -22,7 +22,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/devices`);
+      const res = await fetch(`${API_BASE_URL}/api/devices`);
       
       if (!res.ok) throw new Error("โหลดข้อมูลล้มเหลว");
       const data = await res.json();
@@ -68,7 +68,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/devices`, {
+      const res = await fetch(`${API_BASE_URL}/api/devices`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

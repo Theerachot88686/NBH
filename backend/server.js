@@ -48,7 +48,8 @@ app.post('/api/devices/:id/qrcode', async (req, res) => {
       return res.status(404).json({ error: 'ไม่พบอุปกรณ์' });
     }
 
-    const qrData = `http://localhost:5173/device/${device.code}`;
+    // แก้ตรงนี้ให้เป็น URL หน้าแสดงข้อมูล ไม่ใช่ API
+    const qrData = `https://nbh-6j1m.onrender.com/device/${device.code}`;
     const qr = await QRCode.toDataURL(qrData);
 
     const updated = await prisma.device.update({
@@ -66,6 +67,7 @@ app.post('/api/devices/:id/qrcode', async (req, res) => {
     res.status(500).json({ error: 'ไม่สามารถสร้าง QR Code ได้' });
   }
 });
+
 
 
 // แก้ไขข้อมูลอุปกรณ์พร้อมอัปเดต QR code (ถ้า code เปลี่ยน)
