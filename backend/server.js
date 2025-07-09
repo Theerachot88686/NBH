@@ -153,5 +153,34 @@ app.post('/api/devices', async (req, res) => {
   }
 });
 
+
+
+app.get('/device/:code', async (req, res) => {
+  const code = req.params.code;
+  try {
+    const device = await prisma.device.findUnique({ where: { code } });
+    if (!device) {
+      return res.status(404).send('<h1>ไม่พบอุปกรณ์</h1>');
+    }
+
+    res.send(`
+      <html>
+        <head><title>ข้อมูลอุปกรณ์</title></head>
+        <body>
+          <h1>ข้อมูลอุปกรณ์</h1>
+          <p><strong>ชื่อ:</strong> ${device.name}</p>
+          <p><strong>รหัส:</strong> ${device.code}</p>
+          <p><strong>ยี่ห้อ:</strong> ${device.brand}</p>
+          <p><strong>รุ่น:</strong> ${device.model}</p>
+          <p><strong>รายละเอียด:</strong> ${device.details || '-'}</p>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error('Error in GET /device/:code:', err);
+    res.status(500).send('<h1>เกิดข้อผิดพลาด</h1>');
+  }
+});
+
 // เริ่มเซิร์ฟเวอร์
 app.listen(5000, () => console.log('🚀 Server ready on http://localhost:5000'));
