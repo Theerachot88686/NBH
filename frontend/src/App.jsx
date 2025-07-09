@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
-// ✅ ดึงจาก .env (ห้ามใส่ไว้ใน function)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-1.onrender.com";
 
 export default function DeviceManager() {
@@ -8,7 +7,6 @@ export default function DeviceManager() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const [formVisible, setFormVisible] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -74,128 +72,189 @@ export default function DeviceManager() {
 
       setDevices((prev) => [data, ...prev]);
       setFormVisible(false);
-      setFormData({
-        name: "",
-        code: "",
-        brand: "",
-        model: "",
-        details: "",
-      });
+      setFormData({ name: "", code: "", brand: "", model: "", details: "" });
     } catch (err) {
       setFormError(err.message || "เกิดข้อผิดพลาด");
     }
   };
 
+  const regenerateQRCode = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/devices/${id}/qrcode`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("ไม่สามารถสร้าง QR Code ได้");
+      const updated = await res.json();
+      setDevices((prev) =>
+        prev.map((d) => (d.id === id ? updated.device : d))
+      );
+    } catch (err) {
+      alert(err.message || "เกิดข้อผิดพลาด");
+    }
+  };
+
+  const handlePrint = (qrSrc) => {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print QR Code</title>
+        </head>
+        <body style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+          <img src="${qrSrc}" style="width: 300px; height: 300px; object-fit: contain;" />
+          <script>
+            window.onload = function () {
+              window.print();
+              window.onafterprint = function () {
+                window.close();
+              };
+            }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   return (
-    <div style={{ maxWidth: 900, margin: "auto", padding: 20, fontFamily: "Arial" }}>
-      <h1>ระบบจัดการอุปกรณ์</h1>
+    <div className="max-w-5xl mx-auto px-4 py-6 font-sans">
+      <h1 className="text-2xl font-bold mb-4">ระบบจัดการอุปกรณ์</h1>
 
       <input
         type="text"
         placeholder="ค้นหาชื่อ หรือ รหัสอุปกรณ์..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        style={{
-          width: "100%",
-          padding: 8,
-          marginBottom: 20,
-          fontSize: 16,
-          boxSizing: "border-box",
-        }}
+        className="w-full border border-gray-300 rounded px-3 py-2 mb-4 text-sm"
       />
 
       <button
         onClick={() => setFormVisible(!formVisible)}
-        style={{ marginBottom: 20, padding: "8px 16px", cursor: "pointer" }}
+        className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
       >
         {formVisible ? "ยกเลิก" : "เพิ่มรายการใหม่"}
       </button>
 
       {formVisible && (
-        <form onSubmit={handleAddDevice} style={{ marginBottom: 20, border: "1px solid #ccc", padding: 20 }}>
+        <form onSubmit={handleAddDevice} className="border p-4 mb-6 rounded bg-gray-50">
           {["name", "code", "brand", "model"].map((field) => (
-            <div style={{ marginBottom: 10 }} key={field}>
-              <label>{field === "name" ? "ชื่ออุปกรณ์" : field === "code" ? "รหัสอุปกรณ์" : field === "brand" ? "ยี่ห้อ" : "รุ่น"}*:</label>
-              <br />
+            <div className="mb-4" key={field}>
+              <label className="block mb-1 font-medium">
+                {field === "name"
+                  ? "ชื่ออุปกรณ์"
+                  : field === "code"
+                  ? "รหัสอุปกรณ์"
+                  : field === "brand"
+                  ? "ยี่ห้อ"
+                  : "รุ่น"}
+                *:
+              </label>
               <input
                 type="text"
                 name={field}
                 value={formData[field]}
                 onChange={handleInputChange}
                 required
-                style={{ width: "100%", padding: 6 }}
+                className="w-full border border-gray-300 px-3 py-2 rounded text-sm"
               />
             </div>
           ))}
-          <div style={{ marginBottom: 10 }}>
-            <label>รายละเอียดเพิ่มเติม:</label>
-            <br />
+
+          <div className="mb-4">
+            <label className="block mb-1 font-medium">รายละเอียดเพิ่มเติม:</label>
             <textarea
               name="details"
               value={formData.details}
               onChange={handleInputChange}
               rows={3}
-              style={{ width: "100%", padding: 6 }}
+              className="w-full border border-gray-300 px-3 py-2 rounded text-sm"
             />
           </div>
 
-          {formError && <div style={{ color: "red", marginBottom: 10 }}>{formError}</div>}
+          {formError && <div className="text-red-600 mb-4 text-sm">{formError}</div>}
 
-          <button type="submit" style={{ padding: "8px 16px", cursor: "pointer" }}>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
             บันทึกอุปกรณ์ และสร้าง QR Code
           </button>
         </form>
       )}
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="text-red-600 mb-2">{error}</p>}
       {loading && <p>กำลังโหลดข้อมูล...</p>}
 
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          textAlign: "left",
-          fontSize: 14,
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>ID</th>
-            <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>รหัส</th>
-            <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>ชื่อ</th>
-            <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>ยี่ห้อ</th>
-            <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>รุ่น</th>
-            <th style={{ borderBottom: "1px solid #ddd", padding: 8 }}>QR Code</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredDevices.length === 0 && (
-            <tr>
-              <td colSpan={6} style={{ padding: 8, textAlign: "center" }}>
-                ไม่พบข้อมูลอุปกรณ์
-              </td>
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto border-collapse">
+          <thead>
+            <tr className="bg-gray-100 text-left text-sm">
+              <th className="border px-4 py-2">ID</th>
+              <th className="border px-4 py-2">รหัส</th>
+              <th className="border px-4 py-2">ชื่อ</th>
+              <th className="border px-4 py-2">ยี่ห้อ</th>
+              <th className="border px-4 py-2">รุ่น</th>
+              <th className="border px-4 py-2">QR Code</th>
             </tr>
-          )}
-          {filteredDevices.map((d) => (
-            <tr key={d.id}>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{d.id}</td>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{d.code}</td>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{d.name}</td>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{d.brand}</td>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>{d.model}</td>
-              <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                {d.qrCode ? (
-                  <a href={`${API_BASE_URL.replace('/api', '')}/device/${d.code}`} target="_blank" rel="noopener noreferrer">
-                    <img src={d.qrCode} alt={`QR Code for ${d.code}`} width={80} height={80} style={{ objectFit: "contain" }} />
-                  </a>
-                ) : (
-                  "-"
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredDevices.length === 0 && (
+              <tr>
+                <td colSpan={6} className="text-center py-4 text-gray-500">
+                  ไม่พบข้อมูลอุปกรณ์
+                </td>
+              </tr>
+            )}
+            {filteredDevices.map((d) => (
+              <tr key={d.id} className="text-sm">
+                <td className="border px-4 py-2">{d.id}</td>
+                <td className="border px-4 py-2">{d.code}</td>
+                <td className="border px-4 py-2">{d.name}</td>
+                <td className="border px-4 py-2">{d.brand}</td>
+                <td className="border px-4 py-2">{d.model}</td>
+                <td className="border px-4 py-2">
+                  {d.qrCode ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <a
+                        href={`${API_BASE_URL.replace("/api", "")}/device/${d.code}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <img
+                          src={d.qrCode}
+                          alt={`QR Code for ${d.code}`}
+                          className="w-20 h-20 object-contain"
+                        />
+                      </a>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => regenerateQRCode(d.id)}
+                          className="text-blue-600 hover:underline text-xs"
+                        >
+                          สร้างใหม่
+                        </button>
+                        <button
+                          onClick={() => handlePrint(d.qrCode)}
+                          className="text-green-600 hover:underline text-xs"
+                        >
+                          ปริ้น
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => regenerateQRCode(d.id)}
+                      className="text-blue-600 hover:underline text-sm"
+                    >
+                      สร้าง QR Code
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -160,27 +160,52 @@ app.get('/device/:code', async (req, res) => {
   try {
     const device = await prisma.device.findUnique({ where: { code } });
     if (!device) {
-      return res.status(404).send('<h1>ไม่พบอุปกรณ์</h1>');
+      return res.status(404).send('<h1 class="text-center mt-10 text-xl text-red-600">ไม่พบอุปกรณ์</h1>');
     }
 
     res.send(`
-      <html>
-        <head><title>ข้อมูลอุปกรณ์</title></head>
-        <body>
-          <h1>ข้อมูลอุปกรณ์</h1>
-          <p><strong>ชื่อ:</strong> ${device.name}</p>
-          <p><strong>รหัส:</strong> ${device.code}</p>
-          <p><strong>ยี่ห้อ:</strong> ${device.brand}</p>
-          <p><strong>รุ่น:</strong> ${device.model}</p>
-          <p><strong>รายละเอียด:</strong> ${device.details || '-'}</p>
+      <!DOCTYPE html>
+      <html lang="th">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>ข้อมูลอุปกรณ์ - ${device.name}</title>
+          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+        </head>
+        <body class="bg-gradient-to-br from-blue-50 to-white text-gray-800 font-sans">
+          <div class="max-w-xl mx-auto p-6 mt-12 bg-white rounded-xl shadow-xl border border-gray-200">
+            <h1 class="text-3xl font-bold text-blue-700 text-center mb-6">📦 ข้อมูลอุปกรณ์</h1>
+
+            <div class="grid grid-cols-1 gap-4 text-base">
+              <p><span class="font-semibold text-gray-700">📛 ชื่อ:</span> ${device.name}</p>
+              <p><span class="font-semibold text-gray-700">🔢 รหัส:</span> ${device.code}</p>
+              <p><span class="font-semibold text-gray-700">🏷️ ยี่ห้อ:</span> ${device.brand}</p>
+              <p><span class="font-semibold text-gray-700">🛠️ รุ่น:</span> ${device.model}</p>
+              <p><span class="font-semibold text-gray-700">📝 รายละเอียด:</span> ${device.details || '-'}</p>
+            </div>
+
+            ${
+              device.qrCode
+                ? `<div class="mt-6 text-center">
+                    <img src="${device.qrCode}" alt="QR Code" class="mx-auto w-40 h-40 object-contain border border-gray-300 rounded shadow-sm" />
+                    <p class="mt-2 text-sm text-gray-500">QR Code สำหรับลิงก์หน้านี้</p>
+                  </div>`
+                : ''
+            }
+
+            <div class="mt-8 text-center">
+              <a href="/" class="inline-block text-blue-600 hover:text-blue-800 underline text-sm">← กลับหน้าหลัก</a>
+            </div>
+          </div>
         </body>
       </html>
     `);
   } catch (err) {
     console.error('Error in GET /device/:code:', err);
-    res.status(500).send('<h1>เกิดข้อผิดพลาด</h1>');
+    res.status(500).send('<h1 class="text-center mt-10 text-red-600">เกิดข้อผิดพลาด</h1>');
   }
 });
+
 
 // เริ่มเซิร์ฟเวอร์
 app.listen(5000, () => console.log('🚀 Server ready on https://nbh-1.onrender.com'));
