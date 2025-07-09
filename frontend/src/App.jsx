@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 // ✅ ดึงจาก .env (ห้ามใส่ไว้ใน function)
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-6j1m.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-1.onrender.com";
 
 export default function DeviceManager() {
   const [devices, setDevices] = useState([]);
