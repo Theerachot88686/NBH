@@ -8,11 +8,15 @@ datasource db {
 }
 
 model Device {
-  id        Int     @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
   name      String
-  code      String  @unique
   brand     String
   model     String
-  details   String
+  price     Float?
+  details   String?
+  qrCode String? @db.LongText   // เพิ่มตรงนี้
   createdAt DateTime @default(now())
 }
+
+
