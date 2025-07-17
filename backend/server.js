@@ -55,7 +55,17 @@ app.post('/api/devices/:id/qrcode', async (req, res) => {
 // ✅ แก้ไขข้อมูลอุปกรณ์
 app.put('/api/devices/:id', async (req, res) => {
   const id = parseInt(req.params.id);
-  const { brand, model, price, createdAt, details, location } = req.body;
+  const {
+    brand,
+    model,
+    price,
+    createdAt,
+    details,
+    location,
+    customCode,
+    ipAddress,
+    type,
+  } = req.body;
 
   try {
     const qrData = `${baseUrl}/device/${id}`;
@@ -69,7 +79,10 @@ app.put('/api/devices/:id', async (req, res) => {
         price: price ? parseFloat(price) : null,
         createdAt: createdAt ? new Date(createdAt) : undefined,
         details,
-        location, // ✅ เพิ่ม location
+        location,
+        customCode,
+        ipAddress,
+        type,
         qrCode: qr,
       },
     });
@@ -80,6 +93,7 @@ app.put('/api/devices/:id', async (req, res) => {
     res.status(500).json({ error: 'เกิดข้อผิดพลาดในการอัปเดตข้อมูล' });
   }
 });
+
 
 // ✅ ลบอุปกรณ์
 app.delete('/api/devices/:id', async (req, res) => {
@@ -96,7 +110,17 @@ app.delete('/api/devices/:id', async (req, res) => {
 // ✅ เพิ่มอุปกรณ์
 app.post('/api/devices', async (req, res) => {
   try {
-    const { brand, model, price, createdAt, details, location } = req.body;
+    const {
+      brand,
+      model,
+      price,
+      createdAt,
+      details,
+      location,
+      customCode,
+      ipAddress,
+      type,
+    } = req.body;
 
     if (!brand || !model) {
       return res.status(400).json({ error: 'กรุณาระบุข้อมูลให้ครบถ้วน' });
@@ -109,7 +133,10 @@ app.post('/api/devices', async (req, res) => {
         price: price ? parseFloat(price) : null,
         createdAt: createdAt ? new Date(createdAt) : undefined,
         details,
-        location, // ✅ เพิ่ม location
+        location,
+        customCode,
+        ipAddress,
+        type,
       },
     });
 
@@ -127,6 +154,7 @@ app.post('/api/devices', async (req, res) => {
     res.status(500).json({ error: 'เกิดข้อผิดพลาดในเซิร์ฟเวอร์' });
   }
 });
+
 
 
 // แสดงข้อมูลอุปกรณ์แบบ HTML ตาม id
@@ -165,7 +193,9 @@ res.send(`
         <h1 class="text-3xl font-bold text-blue-700 text-center mb-6">📦 ข้อมูลอุปกรณ์</h1>
 
         <div class="grid grid-cols-1 gap-4 text-base">
-          <p><span class="font-semibold text-gray-700">🆔 เลขคุมครุภัณฑ์:</span> ${device.id}</p>
+          <p><span class="font-semibold text-gray-700">🆔 รหัสอุปกรณ์:</span> ${device.id}</p>
+          <p><span class="font-semibold text-gray-700">📄 เลขคุมครุภัณฑ์:</span> ${device.customCode || '-'}</p>
+          <p><span class="font-semibold text-gray-700">🧩 ประเภทอุปกรณ์:</span> ${device.type || '-'}</p>
           <p><span class="font-semibold text-gray-700">🏷️ ยี่ห้อ:</span> ${device.brand}</p>
           <p><span class="font-semibold text-gray-700">🛠️ รุ่น:</span> ${device.model}</p>
           <p><span class="font-semibold text-gray-700">💵 ราคา:</span> ${
@@ -178,6 +208,7 @@ res.send(`
             month: 'long',
             day: 'numeric',
           })}</p>
+          <p><span class="font-semibold text-gray-700">🌐 IP Address:</span> ${device.ipAddress || '-'}</p>
         </div>
 
         ${
@@ -213,4 +244,4 @@ res.send(`
 });
 
 // เริ่มเซิร์ฟเวอร์
-app.listen(5000, () => console.log('🚀 Server ready on https://nbh-1.onrender.com'));
+app.listen(5000, () => console.log('🚀 Server ready on http://localhost:5000'));

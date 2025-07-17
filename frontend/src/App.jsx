@@ -1,24 +1,47 @@
-import React, { useEffect, useState } from "react";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-1.onrender.com";
+import React, { useEffect, useState, useMemo } from "react";
+import { motion } from "framer-motion";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function DeviceManager() {
   const [devices, setDevices] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [filterLocation, setFilterLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [formVisible, setFormVisible] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [editingDeviceId, setEditingDeviceId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const [formData, setFormData] = useState({
+    customCode: "",
     brand: "",
     model: "",
     price: "",
     createdAt: "",
     details: "",
     location: "",
+    type: "",
+    ipAddress: "",
   });
-  const [formError, setFormError] = useState("");
-  const [editingDeviceId, setEditingDeviceId] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: "id", direction: "asc" });
+
+  const typeOptions = [
+    "คอมพิวเตอร์",
+    "All in One",
+    "เครื่องปริ้น",
+    "UPS",
+    "WIFI",
+    "SW",
+    "โทรศัพท์",
+  ];
+
+  const locationOptions = [
+    "ศูนย์คอมพิวเตอร์",
+    "พัสดุ",
+    "ห้องบัตร",
+  ];
 
   const fetchDevices = async () => {
     setLoading(true);
@@ -39,6 +62,10 @@ export default function DeviceManager() {
     fetchDevices();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterType, filterLocation]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -46,12 +73,15 @@ export default function DeviceManager() {
 
   const handleEditClick = (device) => {
     setFormData({
+      customCode: device.customCode || "",
       brand: device.brand || "",
       model: device.model || "",
       price: device.price != null ? device.price : "",
       createdAt: device.createdAt ? device.createdAt.split("T")[0] : "",
       details: device.details || "",
       location: device.location || "",
+      type: device.type || "",
+      ipAddress: device.ipAddress || "",
     });
     setEditingDeviceId(device.id);
     setFormVisible(true);
@@ -75,18 +105,21 @@ export default function DeviceManager() {
     e.preventDefault();
     setFormError("");
 
-    if (!formData.brand || !formData.model || !formData.location) {
+    if (!formData.customCode || !formData.brand || !formData.model || !formData.location || !formData.type) {
       setFormError("กรุณากรอกข้อมูลให้ครบทุกช่องที่จำเป็น");
       return;
     }
 
     const payload = {
+      customCode: formData.customCode,
       brand: formData.brand,
       model: formData.model,
       price: formData.price ? Number(formData.price) : null,
       createdAt: formData.createdAt || undefined,
       details: formData.details || "",
-      location: formData.location || "",
+      location: formData.location,
+      type: formData.type,
+      ipAddress: formData.ipAddress || null,
     };
 
     try {
@@ -109,21 +142,22 @@ export default function DeviceManager() {
       }
 
       if (editingDeviceId) {
-        setDevices((prev) =>
-          prev.map((d) => (d.id === editingDeviceId ? data : d))
-        );
+        setDevices((prev) => prev.map((d) => (d.id === editingDeviceId ? data : d)));
       } else {
         setDevices((prev) => [data, ...prev]);
       }
 
       setFormVisible(false);
       setFormData({
+        customCode: "",
         brand: "",
         model: "",
         price: "",
         createdAt: "",
         details: "",
         location: "",
+        type: "",
+        ipAddress: "",
       });
       setEditingDeviceId(null);
     } catch (err) {
@@ -138,115 +172,115 @@ export default function DeviceManager() {
       });
       if (!res.ok) throw new Error("ไม่สามารถสร้าง QR Code ได้");
       const updated = await res.json();
-      setDevices((prev) =>
-        prev.map((d) => (d.id === id ? updated.device : d))
-      );
+      setDevices((prev) => prev.map((d) => (d.id === id ? updated.device : d)));
     } catch (err) {
       alert(err.message || "เกิดข้อผิดพลาด");
     }
   };
 
-const handlePrint = (qrSrc, deviceInfo = {}) => {
-  const {
-    id = "",
-    brand = "",
-    model = "",
-    createdAt = "",
-    location = "",
-  } = deviceInfo;
 
-  const locationText = location || "-";
-  const createdAtText = createdAt
-    ? new Date(createdAt).toLocaleDateString("th-TH", {
+  const handlePrint = (qrSrc, deviceInfo = {}) => {
+    const {
+      id = "",
+      customCode = "",
+      brand = "",
+      model = "",
+      createdAt = "",
+      location = "",
+      type = "",
+      ipAddress = "",
+    } = deviceInfo;
+
+    const locationText = location || "-";
+    const createdAtText = createdAt
+      ? new Date(createdAt).toLocaleDateString("th-TH", {
         year: "numeric",
         month: "short",
         day: "numeric",
       })
-    : "-";
+      : "-";
 
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(`
-    <html>
-      <head>
-        <style>
-          @page {
-            size: 50mm 20mm;
-            margin: 0;
-          }
-          html, body {
-            margin: 0;
-            padding: 0;
-            width: 50mm;
-            height: 20mm;
-            box-sizing: border-box;
-            font-family: sans-serif;
-            background: #fff;
-          }
-          .container {
-            display: flex;
-            align-items: center;
-            padding: 2mm;
-            box-sizing: border-box;
-            width: 50mm;
-            height: 20mm;
-          }
-          .qr {
-            width: 16mm;
-            height: 16mm;
-            object-fit: contain;
-            margin-right: 2mm;
-          }
-          .info {
-            font-size: 2.3mm;
-            line-height: 1.2;
-            max-width: 30mm;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          .label {
-            font-weight: bold;
-          }
-          @media print {
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <style>
+            @page {
+              size: 50mm 30mm;
+              margin: 0;
+            }
             html, body {
               margin: 0;
               padding: 0;
               width: 50mm;
-              height: 20mm;
+              height: 30mm;
               box-sizing: border-box;
+              font-family: sans-serif;
+              background: #fff;
             }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <img src="${qrSrc}" class="qr" alt="QR Code" />
-          <div class="info">
-            <div>${id}</div>
-            <div><span class="label">ยี่ห้อ:</span> ${brand}</div>
-            <div><span class="label">รุ่น:</span> ${model}</div>
-            <div><span class="label">ที่จัดเก็บ:</span> ${locationText}</div>
-            <div><span class="label">บันทึก:</span> ${createdAtText}</div>
+            .container {
+              display: flex;
+              align-items: center;
+              padding: 2mm;
+              box-sizing: border-box;
+              width: 50mm;
+              height: 30mm;
+            }
+            .qr {
+              width: 16mm;
+              height: 16mm;
+              object-fit: contain;
+              margin-right: 2mm;
+            }
+            .info {
+              font-size: 2.3mm;
+              line-height: 1.2;
+              max-width: 30mm;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .label {
+              font-weight: bold;
+            }
+            @media print {
+              html, body {
+                margin: 0;
+                padding: 0;
+                width: 50mm;
+                height: 30mm;
+                box-sizing: border-box;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <img src="${qrSrc}" class="qr" alt="QR Code" />
+            <div class="info">
+              <div>${id}</div>
+              <div><span class="label">เลขคุมครุภัณฑ์:</span> ${customCode}</div>
+              <div><span class="label">ยี่ห้อ:</span> ${brand}</div>
+              <div><span class="label">รุ่น:</span> ${model}</div>
+              <div><span class="label">ประเภท:</span> ${type}</div>
+              <div><span class="label">IP Address:</span> ${ipAddress || "-"}</div>
+              <div><span class="label">ที่จัดเก็บ:</span> ${locationText}</div>
+              <div><span class="label">บันทึก:</span> ${createdAtText}</div>
+            </div>
           </div>
-        </div>
-        <script>
-          window.onload = () => {
-            window.print();
-            window.onafterprint = () => window.close();
-          };
-        </script>
-      </body>
-    </html>
-  `);
-  printWindow.document.close();
-};
+          <script>
+            window.onload = () => {
+              window.print();
+              window.onafterprint = () => window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
-
-
-
-
-
-
+  const [sortConfig, setSortConfig] = useState({ key: "id", direction: "asc" });
   const handleSort = (key) => {
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") {
@@ -255,19 +289,30 @@ const handlePrint = (qrSrc, deviceInfo = {}) => {
     setSortConfig({ key, direction });
   };
 
-  const sortedDevices = React.useMemo(() => {
-    let sortableDevices = [...devices];
+  // กรองและค้นหา พร้อมเรียงลำดับ
+  const filteredDevices = useMemo(() => {
+    let filtered = [...devices];
+    if (filterType) {
+      filtered = filtered.filter((d) => d.type === filterType);
+    }
+    if (filterLocation) {
+      filtered = filtered.filter((d) => d.location === filterLocation);
+    }
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      sortableDevices = sortableDevices.filter(
+      filtered = filtered.filter(
         (d) =>
+          (d.customCode && d.customCode.toLowerCase().includes(term)) ||
           (d.brand && d.brand.toLowerCase().includes(term)) ||
           (d.model && d.model.toLowerCase().includes(term)) ||
           (d.details && d.details.toLowerCase().includes(term)) ||
-          (d.location && d.location.toLowerCase().includes(term))
+          (d.location && d.location.toLowerCase().includes(term)) ||
+          (d.type && d.type.toLowerCase().includes(term)) ||
+          (d.ipAddress && d.ipAddress.toLowerCase().includes(term))
       );
     }
-    sortableDevices.sort((a, b) => {
+
+    filtered.sort((a, b) => {
       let aVal = a[sortConfig.key];
       let bVal = b[sortConfig.key];
 
@@ -289,65 +334,137 @@ const handlePrint = (qrSrc, deviceInfo = {}) => {
       if (aVal > bVal) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
     });
-    return sortableDevices;
-  }, [devices, searchTerm, sortConfig]);
+
+    return filtered;
+  }, [devices, searchTerm, filterType, filterLocation, sortConfig]);
+
+  const paginatedDevices = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredDevices.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredDevices, currentPage]);
+
+  const totalPages = Math.ceil(filteredDevices.length / itemsPerPage);
 
   return (
-    
-    
     <div className="px-4 py-6 font-sans">
-      <h1 className="text-4xl font-bold text-center mb-10 text-gray-800 tracking-tight font-sans">
-        📦 ระบบจัดการอุปกรณ์
-      </h1>
-
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <input
-          type="text"
-          placeholder="🔍 ค้นหายี่ห้อ, รุ่น หรือรายละเอียด..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full md:w-96 border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-4 focus:ring-blue-400 focus:outline-none transition"
-        />
-        <button
-          onClick={() => {
-            setFormVisible(!formVisible);
-            setFormError("");
-            setEditingDeviceId(null);
-            setFormData({
-              brand: "",
-              model: "",
-              price: "",
-              createdAt: "",
-              details: "",
-              location: "",
-            });
-          }}
-          className={`flex items-center gap-2 px-5 py-3 rounded-lg text-white text-base font-semibold shadow-md transition
-            ${formVisible ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}
-          `}
-          aria-label={formVisible ? "ยกเลิกการเพิ่มอุปกรณ์" : "เพิ่มอุปกรณ์ใหม่"}
+      <motion.h1
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="text-center mb-10 text-3xl font-extrabold tracking-tight text-white bg-blue-600 rounded-lg py-2 px-4 inline-block shadow-md"
+      >
+        <motion.span
+          animate={{ rotate: [0, 15, -15, 15, 0] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+          className="inline-block mr-2"
         >
-          {formVisible ? (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              ยกเลิก
-            </>
-          ) : (
-            <>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              เพิ่มอุปกรณ์
-            </>
-          )}
-        </button>
+          📦
+        </motion.span>
+        ระบบจัดการอุปกรณ์
+      </motion.h1>
+
+
+
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+        {/* กลุ่มฟิลเตอร์ประเภท และหน่วยงาน */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full md:w-auto">
+          <select
+            aria-label="กรองตามประเภทอุปกรณ์"
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            className="w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-4 focus:ring-blue-400 focus:outline-none transition"
+          >
+            <option value="">-- เลือกประเภทอุปกรณ์ทั้งหมด --</option>
+            {typeOptions.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+
+          <select
+            aria-label="กรองตามหน่วยงาน"
+            value={filterLocation}
+            onChange={(e) => setFilterLocation(e.target.value)}
+            className="w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-4 focus:ring-blue-400 focus:outline-none transition"
+          >
+            <option value="">-- เลือกหน่วยงานทั้งหมด --</option>
+            {locationOptions.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* กลุ่มค้นหา และปุ่มเพิ่มอุปกรณ์ */}
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <input
+            type="text"
+            placeholder="🔍 ค้นหารหัสอุปกรณ์, ยี่ห้อ, รุ่น, ประเภท, IP, หรือรายละเอียด..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-grow md:flex-grow-0 w-full md:w-96 border border-gray-300 rounded-lg px-4 py-3 text-base focus:ring-4 focus:ring-blue-400 focus:outline-none transition"
+            aria-label="ค้นหาอุปกรณ์"
+          />
+          <button
+            onClick={() => {
+              setFormVisible(!formVisible);
+              setFormError("");
+              setEditingDeviceId(null);
+              setFormData({
+                customCode: "",
+                brand: "",
+                model: "",
+                price: "",
+                createdAt: "",
+                details: "",
+                location: "",
+                type: "",
+                ipAddress: "",
+              });
+            }}
+            className={`flex items-center gap-2 px-5 py-3 rounded-lg text-white text-base font-semibold shadow-md transition
+        ${formVisible ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}
+      `}
+            aria-label={formVisible ? "ยกเลิกการเพิ่มอุปกรณ์" : "เพิ่มอุปกรณ์ใหม่"}
+          >
+            {formVisible ? (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                ยกเลิก
+              </>
+            ) : (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                เพิ่มอุปกรณ์
+              </>
+            )}
+          </button>
+        </div>
       </div>
+
 
       {formVisible && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-opacity-30 backdrop-blur-sm"
           onClick={() => setFormVisible(false)}
           aria-modal="true"
           role="dialog"
@@ -358,13 +475,13 @@ const handlePrint = (qrSrc, deviceInfo = {}) => {
               e.stopPropagation();
               handleSaveDevice(e);
             }}
-            className="bg-white rounded-xl shadow-lg p-6 max-w-lg w-full mx-4 relative"
+            className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-3xl mx-4 animate-fade-in-up relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setFormVisible(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 focus:outline-none"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition duration-200"
               aria-label="ปิดฟอร์ม"
             >
               <svg
@@ -379,280 +496,487 @@ const handlePrint = (qrSrc, deviceInfo = {}) => {
               </svg>
             </button>
 
-            {editingDeviceId && (
-              <div className="mb-5">
-                <label className="block mb-2 font-semibold text-gray-700">เลขคุมครุภัณฑ์:</label>
-                <input
-                  type="text"
-                  value={editingDeviceId}
-                  disabled
-                  className="w-full border border-gray-300 px-4 py-3 rounded-lg bg-gray-100 cursor-not-allowed text-gray-600"
-                />
-              </div>
-            )}
+            <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+              {editingDeviceId ? "แก้ไขอุปกรณ์" : "เพิ่มอุปกรณ์ใหม่"}
+            </h2>
 
-            {["brand", "model"].map((field) => (
-              <div className="mb-5" key={field}>
-                <label className="block mb-2 font-semibold text-gray-700">
-                  {field === "brand" ? "ยี่ห้อ" : "รุ่น"}*:
-                </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {editingDeviceId && (
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700">รหัสอุปกรณ์:</label>
+                  <input
+                    type="text"
+                    value={editingDeviceId}
+                    disabled
+                    className="mt-1 w-full border border-gray-300 px-4 py-2 rounded-lg bg-gray-100 cursor-not-allowed text-gray-600"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">เลขคุมครุภัณฑ์*:</label>
                 <input
                   type="text"
-                  name={field}
-                  value={formData[field]}
+                  name="customCode"
+                  value={formData.customCode}
                   onChange={handleInputChange}
                   required
-                  className="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                  className="mt-1 w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
                 />
               </div>
-            ))}
 
-            <div className="mb-5">
-              <label className="block mb-2 font-semibold text-gray-700">สถานที่จัดเก็บ*:</label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location ?? ""}
-                onChange={handleInputChange}
-                required
-                className="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">ยี่ห้อ*:</label>
+                <input
+                  type="text"
+                  name="brand"
+                  value={formData.brand}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1 w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                />
+              </div>
 
-            <div className="mb-5">
-              <label className="block mb-2 font-semibold text-gray-700">ราคา (บาท):</label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price ?? ""}
-                onChange={handleInputChange}
-                min="0"
-                step="0.01"
-                className="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">รุ่น*:</label>
+                <input
+                  type="text"
+                  name="model"
+                  value={formData.model}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1 w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                />
+              </div>
 
-            <div className="mb-5">
-              <label className="block mb-2 font-semibold text-gray-700">วันลงบันทึก:</label>
-              <input
-                type="date"
-                name="createdAt"
-                value={formData.createdAt}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
-              />
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">ประเภท*:</label>
+                <select
+                  name="type"
+                  value={formData.type}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                >
+                  <option value="">-- เลือกประเภท --</option>
+                  {typeOptions.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="mb-5">
-              <label className="block mb-2 font-semibold text-gray-700">รายละเรียดเติมเติม:</label>
-              <textarea
-                name="details"
-                value={formData.details}
-                onChange={handleInputChange}
-                rows={3}
-                className="w-full border border-gray-300 px-4 py-3 rounded-lg resize-none focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
-                placeholder="ระบุรายละเพิ่มเติม (ถ้ามี)"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700">สถานีที่เก็บ*:</label>
+                <select
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                >
+                  <option value="">-- เลือกสถานีที่เก็บ --</option>
+                  {locationOptions.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">IP Address:</label>
+                <input
+                  type="text"
+                  name="ipAddress"
+                  value={formData.ipAddress}
+                  onChange={handleInputChange}
+                  placeholder="ใส่หรือไม่ใส่ก็ได้"
+                  className="mt-1 w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">ราคา (บาท):</label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  min={0}
+                  className="mt-1 w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">วันที่บันทึก:</label>
+                <input
+                  type="date"
+                  name="createdAt"
+                  value={formData.createdAt}
+                  onChange={handleInputChange}
+                  className="mt-1 w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">รายละเอียด:</label>
+                <textarea
+                  name="details"
+                  value={formData.details}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="mt-1 w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                />
+              </div>
             </div>
 
             {formError && (
-              <p className="text-red-600 mb-4 text-sm font-medium">{formError}</p>
+              <p className="text-red-600 font-semibold mt-4 text-center">{formError}</p>
             )}
 
-            <button
-              type="submit"
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold text-lg shadow-md transition"
-              aria-label={editingDeviceId ? "บันทึกการแก้ไขอุปกรณ์" : "บันทึกอุปกรณ์ใหม่"}
-            >
-              {editingDeviceId ? "📎 บันทึกการแก้ไข" : "✅ บันทึก"}
-            </button>
+            <div className="flex justify-center mt-6 gap-4">
+              <button
+                type="submit"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+              >
+                บันทึก
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormVisible(false)}
+                className="bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition"
+              >
+                ยกเลิก
+              </button>
+            </div>
           </form>
         </div>
       )}
 
-      {error && <p className="text-red-600 mb-4 text-center font-semibold">{error}</p>}
-      {loading && <p className="text-center text-gray-600 italic">กำลังโหลดข้อมูล...</p>}
+      {error && (
+        <p className="text-red-600 mb-4 text-center font-semibold" role="alert">
+          {error}
+        </p>
+      )}
+      {loading && (
+        <p className="text-center text-gray-600 italic" aria-live="polite">
+          กำลังโหลดข้อมูล...
+        </p>
+      )}
 
-      <div className="overflow-x-auto rounded-lg shadow-lg border border-gray-200">
-        <table className="min-w-full table-auto border-collapse">
-         <thead className="bg-gradient-to-r from-blue-500 to-blue-600 text-white select-none">
-  <tr>
-    {[
-      { key: "id", label: "เลขคุมครุภัณฑ์" },
-      { key: "brand", label: "ยี่ห้อ" },
-      { key: "model", label: "รุ่น" },
-      { key: "price", label: "ราคา" },
-      { key: "createdAt", label: "วันลงบันทึก" },
-      { key: "location", label: "สถานที่จัดเก็บ" }, // เพิ่มตรงนี้
-      { key: "details", label: "รายละเอียด" },
-      { key: "qrCode", label: "QR Code" },
-      { key: "actions", label: "จัดการ" },
-    ].map(({ key, label }) => (
-      <th
-        key={key}
-        className={`px-6 py-3 text-left text-sm font-semibold ${
-          key !== "actions" && key !== "qrCode"
-            ? "cursor-pointer select-none"
-            : ""
-        }`}
-        onClick={
-          key !== "actions" && key !== "qrCode"
-            ? () => handleSort(key)
-            : undefined
-        }
-        role={key !== "actions" && key !== "qrCode" ? "button" : undefined}
-        tabIndex={key !== "actions" && key !== "qrCode" ? 0 : undefined}
-        aria-sort={
-          sortConfig.key === key
-            ? sortConfig.direction === "asc"
-              ? "ascending"
-              : "descending"
-            : "none"
-        }
-      >
-        <div className="flex items-center gap-1 select-none">
-          {label}
-          {sortConfig.key === key && (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`h-4 w-4 transition-transform ${
-                sortConfig.direction === "asc" ? "" : "rotate-180"
-              }`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={3}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-            </svg>
-          )}
-        </div>
-      </th>
-    ))}
-  </tr>
-</thead>
-<tbody className="bg-white divide-y divide-gray-200">
-  {sortedDevices.length === 0 ? (
-    <tr>
-      <td colSpan={9} className="py-6 text-center text-gray-500 font-medium">
-        ไม่พบข้อมูลอุปกรณ์
-      </td>
-    </tr>
-  ) : (
-    sortedDevices.map((d) => (
-      <tr
-        key={d.id}
-        className="hover:bg-gray-50 transition-colors duration-150"
-        tabIndex={0}
-      >
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">{d.id}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{d.brand}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{d.model}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-          {d.price != null ? d.price.toLocaleString("th-TH") + " บาท" : "-"}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-          {d.createdAt
-            ? new Date(d.createdAt).toLocaleDateString("th-TH", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })
-            : "-"}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap max-w-xs truncate text-sm text-gray-700">
-          {d.location || "-"}
-        </td>
-        <td className="px-6 py-4 max-w-xs truncate text-sm text-gray-700">{d.details || "-"}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-center">
-          {d.qrCode ? (
-            <div className="flex flex-col items-center gap-2">
-              <a
-                href={`${API_BASE_URL.replace("/api", "")}/device/${d.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block hover:scale-110 transform transition-transform"
-                title={`ดู QR Code อุปกรณ์ ${d.id}`}
+      <div className="">
+        <table
+          className="min-w-full table-auto border-collapse rounded-lg overflow-hidden shadow-lg"
+          role="table"
+          aria-label="ตารางข้อมูลอุปกรณ์"
+        >
+          {/* หัวตาราง */}
+          <thead className="bg-gradient-to-r from-blue-400 via-blue-600 to-indigo-700 text-white select-none">
+            <tr>
+              {[
+                { key: "id", label: "ID" },
+                { key: "customCode", label: "รหัสครุภัณฑ์" },
+                { key: "location", label: "หน่วยงาน" },
+                { key: "type", label: "ประเภท" },
+                { key: "brand", label: "ยี่ห้อ" },
+                { key: "model", label: "รุ่น" },
+                { key: "ipAddress", label: "IP Address" },
+                { key: "price", label: "ราคา (บาท)" },
+                { key: "createdAt", label: "วันที่บันทึก" },
+              ].map(({ key, label }) => (
+                <th
+                  key={key}
+                  scope="col"
+                  className="px-4 py-3 font-semibold text-center cursor-pointer relative"
+                  onClick={() => handleSort(key)}
+                  aria-sort={sortConfig.key === key ? sortConfig.direction : "none"}
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      handleSort(key);
+                    }
+                  }}
+                >
+                  <div className="flex items-center justify-center gap-1 select-none">
+                    <span>{label}</span>
+                    {/* ลูกศรบอกสถานะการเรียง */}
+                    {sortConfig.key === key && (
+                      <svg
+                        className={`w-4 h-4 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""
+                          }`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    )}
+                  </div>
+                </th>
+              ))}
+              <th className="px-4 py-3 font-semibold text-center">QR Code</th>
+              <th className="px-4 py-3 font-semibold text-center">จัดการ</th>
+            </tr>
+          </thead>
+          {/* เนื้อหา */}
+          <tbody>
+            {filteredDevices.length === 0 ? (
+              <tr>
+                <td colSpan={12} className="text-center py-8 text-gray-400 italic">
+                  ไม่พบข้อมูลอุปกรณ์
+                </td>
+              </tr>
+            ) : (
+              paginatedDevices.map((device, idx) => (
+                <tr
+                  key={device.id}
+                  className={`cursor-pointer transition-colors duration-200 ${idx % 2 === 0 ? "bg-white" : "bg-blue-50"
+                    } hover:bg-blue-100`}
+                >
+                  <td className="px-3 py-2 text-center font-semibold text-sm text-gray-800">{device.id}</td>
+                  <td className="px-3 py-2 text-center font-semibold text-sm text-gray-800">{device.customCode}</td>
+                  <td className="px-3 py-2 text-center font-semibold text-sm text-gray-800">{device.location}</td>
+                  <td className="px-3 py-2 text-center font-semibold text-sm text-gray-800">{device.type}</td>
+                  <td className="px-3 py-2 text-center font-semibold text-sm text-gray-800">{device.brand}</td>
+                  <td className="px-3 py-2 text-center font-semibold text-sm text-gray-800">{device.model}</td>
+                  <td className="px-3 py-2 text-center font-semibold text-sm text-gray-800">{device.ipAddress || "-"}</td>
+                  <td className="px-3 py-2 text-center font-semibold text-sm text-gray-800">
+                    {device.price != null ? device.price.toLocaleString() : "-"}
+                  </td>
+
+                  <td className="px-3 py-2 text-center font-semibold text-sm text-gray-800">
+                    {device.createdAt
+                      ? new Date(device.createdAt).toLocaleDateString("th-TH", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                      : "-"}
+                  </td>
+
+
+                  {/* QR Code */}
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    {device.qrCode ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <a
+                          href={`${API_BASE_URL.replace("/api", "")}/device/${device.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block hover:scale-110 transform transition-transform duration-200 rounded-lg shadow-lg"
+                          title={`ดู QR Code อุปกรณ์ ${device.id}`}
+                        >
+                          <img
+                            src={device.qrCode}
+                            alt={`QR Code for device ${device.id}`}
+                            className="w-20 h-20 object-contain rounded-md border border-blue-300"
+                          />
+                        </a>
+                        <div className="flex gap-2 mt-1 justify-center">
+
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => regenerateQRCode(device.id)}
+                        className="text-blue-600 hover:text-blue-800 font-semibold text-sm underline transition"
+                      >
+                        สร้าง QR Code
+                      </button>
+                    )}
+                  </td>
+
+                  {/* จัดการ */}
+                  <td className="px-3 py-2 text-center whitespace-nowrap flex justify-center gap-3">
+                    {/* Edit - ไอคอนดินสอ (Pencil) */}
+                    <button
+                      onClick={() => handleEditClick(device)}
+                      className="bg-yellow-400 hover:bg-yellow-500 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
+                      aria-label={`แก้ไขอุปกรณ์ ${device.customCode}`}
+                      title="แก้ไข"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 11l6-6 3 3-6 6H9v-3z" />
+                      </svg>
+                    </button>
+
+                    {/* Delete - ไอคอนถังขยะ (Trash) */}
+                    <button
+                      onClick={() => handleDeleteClick(device.id)}
+                      className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
+                      aria-label={`ลบอุปกรณ์ ${device.customCode}`}
+                      title="ลบ"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 011-1h2a1 1 0 011 1m-4 0h4" />
+                      </svg>
+                    </button>
+
+                    {/* สร้าง QR Code ใหม่ - ปรับให้เป็นปุ่มไอคอนเดียว */}
+                    <button
+                      onClick={() => regenerateQRCode(device.id)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
+                      aria-label={`สร้าง QR Code ใหม่สำหรับอุปกรณ์ ${device.id}`}
+                      title="สร้าง QR Code ใหม่"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M4 4v5h.582m15.276 11.276A9 9 0 104.582 9H4v5h.582m15.276 11.276L20 20"
+                        />
+                      </svg>
+                    </button>
+
+                    {/* ปริ้นข้อมูล - ปรับให้เป็นปุ่มไอคอนเดียว */}
+                    <button
+                      onClick={() =>
+                        handlePrint(device.qrCode, {
+                          id: device.id,
+                          brand: device.brand,
+                          model: device.model,
+                          price: device.price,
+                          createdAt: device.createdAt,
+                          details: device.details || "-",
+                          location: device.location || "-",
+                        })
+                      }
+                      className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
+                      title="พิมพ์ข้อมูลอุปกรณ์"
+                      aria-label={`พิมพ์ข้อมูลของอุปกรณ์ ${device.brand} รุ่น ${device.model}`}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 9v6m6-6v6m6-6v6M4 7h16M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7"
+                        />
+                      </svg>
+                    </button>
+                  </td>
+
+
+
+                </tr>
+              ))
+            )}
+          </tbody>
+
+
+        </table>
+
+      </div>
+      {/* Pagination */}
+      <div className="flex justify-center mt-6 gap-2 select-none flex-wrap">
+        <button
+          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+          disabled={currentPage === 1}
+          className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50"
+        >
+          ก่อนหน้า
+        </button>
+
+        {/* แสดงเลขหน้าแบบจำกัด 5 หน้า */}
+        {(() => {
+          const pageNumbers = [];
+          const maxVisiblePages = 5;
+          let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+          let endPage = startPage + maxVisiblePages - 1;
+
+          if (endPage > totalPages) {
+            endPage = totalPages;
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+          }
+
+          if (startPage > 1) {
+            pageNumbers.push(
+              <button
+                key={1}
+                onClick={() => setCurrentPage(1)}
+                className={`px-3 py-1 rounded border border-gray-300 ${currentPage === 1 ? "bg-blue-600 text-white" : "hover:bg-blue-100"}`}
               >
-                <img
-                  src={d.qrCode}
-                  alt={`QR Code for device ${d.id}`}
-                  className="w-20 h-20 object-contain rounded-md shadow-md border border-gray-300"
-                />
-              </a>
-              <div className="flex gap-2 mt-1">
-                <button
-                  onClick={() => regenerateQRCode(d.id)}
-                  className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-semibold text-xs px-2 py-1 rounded-md border border-blue-600 hover:border-blue-800 transition"
-                  aria-label={`สร้าง QR Code ใหม่สำหรับอุปกรณ์ ${d.id}`}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.276 11.276A9 9 0 104.582 9H4v5h.582m15.276 11.276L20 20" />
-                  </svg>
-                  สร้างใหม่
-                </button>
-                <button
-                  onClick={() =>
-                    handlePrint(d.qrCode, {
-                      id: d.id,
-                      brand: d.brand,
-                      model: d.model,
-                      price: d.price,
-                      createdAt: d.createdAt,
-                      details: d.details || "-",
-                      location: d.location || "-",
-                    })
-                  }
-                  className="flex items-center gap-1 text-green-600 hover:text-green-800 font-semibold text-xs px-2 py-1 rounded-md border border-green-600 hover:border-green-800 transition"
-                  title="พิมพ์ข้อมูลอุปกรณ์"
-                  aria-label={`พิมพ์ข้อมูลของอุปกรณ์ ${d.brand} รุ่น ${d.model}`}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 9v6m6-6v6m6-6v6M4 7h16M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7" />
-                  </svg>
-                  ปริ้น
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => regenerateQRCode(d.id)}
-              className="text-blue-600 hover:text-blue-800 font-semibold text-sm underline"
-            >
-              สร้าง QR Code
-            </button>
-          )}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap flex gap-3 justify-center">
-          <button
-            onClick={() => handleEditClick(d)}
-            className="flex items-center gap-1 text-yellow-500 hover:text-yellow-700 font-semibold text-sm px-3 py-1 rounded-md border border-yellow-500 hover:border-yellow-700 transition"
-            aria-label={`แก้ไขอุปกรณ์ ${d.brand} รุ่น ${d.model}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5h6m2 2v10a2 2 0 01-2 2H7l-4 4V7a2 2 0 012-2h8z" />
-            </svg>
-            แก้ไข
-          </button>
-          <button
-            onClick={() => handleDeleteClick(d.id)}
-            className="flex items-center gap-1 text-red-600 hover:text-red-800 font-semibold text-sm px-3 py-1 rounded-md border border-red-600 hover:border-red-800 transition"
-            aria-label={`ลบอุปกรณ์ ${d.brand} รุ่น ${d.model}`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            ลบ
-          </button>
-        </td>
-      </tr>
-    ))
-  )}
-</tbody>
-      </table>
+                1
+              </button>
+            );
+            if (startPage > 2) {
+              pageNumbers.push(
+                <span key="dots-start" className="px-2 py-1 text-gray-500">...</span>
+              );
+            }
+          }
+
+          for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(
+              <button
+                key={i}
+                onClick={() => setCurrentPage(i)}
+                className={`px-3 py-1 rounded border border-gray-300 ${currentPage === i ? "bg-blue-600 text-white" : "hover:bg-blue-100"}`}
+              >
+                {i}
+              </button>
+            );
+          }
+
+          if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+              pageNumbers.push(
+                <span key="dots-end" className="px-2 py-1 text-gray-500">...</span>
+              );
+            }
+            pageNumbers.push(
+              <button
+                key={totalPages}
+                onClick={() => setCurrentPage(totalPages)}
+                className={`px-3 py-1 rounded border border-gray-300 ${currentPage === totalPages ? "bg-blue-600 text-white" : "hover:bg-blue-100"}`}
+              >
+                {totalPages}
+              </button>
+            );
+          }
+
+          return pageNumbers;
+        })()}
+
+        <button
+          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+          disabled={currentPage === totalPages}
+          className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50"
+        >
+          ถัดไป
+        </button>
+      </div>
+
     </div>
-
-  </div>
-);
-
+  );
 }
