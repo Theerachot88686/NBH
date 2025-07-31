@@ -373,9 +373,9 @@ export default function DeviceManager() {
             aria-label="กรองตามประเภทอุปกรณ์"
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-4 focus:ring-blue-400 focus:outline-none transition"
+            className="cursor-pointer w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-4 focus:ring-blue-400 focus:outline-none transition"
           >
-            <option value="">-- เลือกประเภทอุปกรณ์ทั้งหมด --</option>
+            <option value="">เลือกประเภทอุปกรณ์ทั้งหมด</option>
             {typeOptions.map((t) => (
               <option key={t} value={t}>
                 {t}
@@ -387,9 +387,9 @@ export default function DeviceManager() {
             aria-label="กรองตามหน่วยงาน"
             value={filterLocation}
             onChange={(e) => setFilterLocation(e.target.value)}
-            className="w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-4 focus:ring-blue-400 focus:outline-none transition"
+            className="cursor-pointer w-full sm:w-64 border border-gray-300 rounded-lg px-4 py-2 text-base focus:ring-4 focus:ring-blue-400 focus:outline-none transition"
           >
-            <option value="">-- เลือกหน่วยงานทั้งหมด --</option>
+            <option value="">เลือกหน่วยงานทั้งหมด</option>
             {locationOptions.map((loc) => (
               <option key={loc} value={loc}>
                 {loc}
@@ -425,9 +425,9 @@ export default function DeviceManager() {
                 ipAddress: "",
               });
             }}
-            className={`flex items-center gap-2 px-5 py-3 rounded-lg text-white text-base font-semibold shadow-md transition
-        ${formVisible ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}
-      `}
+            className={`cursor-pointer flex items-center gap-2 px-5 py-3 rounded-lg text-white text-base font-semibold shadow-md transition
+    ${formVisible ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"}
+  `}
             aria-label={formVisible ? "ยกเลิกการเพิ่มอุปกรณ์" : "เพิ่มอุปกรณ์ใหม่"}
           >
             {formVisible ? (
@@ -458,6 +458,7 @@ export default function DeviceManager() {
               </>
             )}
           </button>
+
         </div>
       </div>
 
@@ -556,7 +557,7 @@ export default function DeviceManager() {
                   value={formData.type}
                   onChange={handleInputChange}
                   required
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                  className="cursor-pointer mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
                 >
                   <option value="">-- เลือกประเภท --</option>
                   {typeOptions.map((t) => (
@@ -574,7 +575,7 @@ export default function DeviceManager() {
                   value={formData.location}
                   onChange={handleInputChange}
                   required
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                  className=" cursor-pointer mt-1 w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
                 >
                   <option value="">-- เลือกสถานีที่เก็บ --</option>
                   {locationOptions.map((loc) => (
@@ -610,13 +611,13 @@ export default function DeviceManager() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">วันที่บันทึก:</label>
+                <label className="cursor-pointerblock text-sm font-medium text-gray-700">วันที่บันทึก:</label>
                 <input
                   type="date"
                   name="createdAt"
                   value={formData.createdAt}
                   onChange={handleInputChange}
-                  className="mt-1 w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
+                  className="cursor-pointer mt-1 w-full border border-gray-300 px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 focus:outline-none transition"
                 />
               </div>
 
@@ -639,14 +640,14 @@ export default function DeviceManager() {
             <div className="flex justify-center mt-6 gap-4">
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                className="cursor-pointer bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
               >
                 บันทึก
               </button>
               <button
                 type="button"
                 onClick={() => setFormVisible(false)}
-                className="bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition"
+                className="cursor-pointer bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition"
               >
                 ยกเลิก
               </button>
@@ -733,7 +734,7 @@ export default function DeviceManager() {
               paginatedDevices.map((device, idx) => (
                 <tr
                   key={device.id}
-                  className={`cursor-pointer transition-colors duration-200 ${idx % 2 === 0 ? "bg-white" : "bg-blue-50"
+                  className={` transition-colors duration-200 ${idx % 2 === 0 ? "bg-white" : "bg-blue-50"
                     } hover:bg-blue-100`}
                 >
                   <td className="px-3 py-2 text-center font-semibold text-sm text-gray-800">{device.id}</td>
@@ -791,10 +792,10 @@ export default function DeviceManager() {
 
                   {/* จัดการ */}
                   <td className="px-3 py-2 text-center whitespace-nowrap flex justify-center gap-3">
-                    {/* Edit - ไอคอนดินสอ (Pencil) */}
+                    {/* Edit */}
                     <button
                       onClick={() => handleEditClick(device)}
-                      className="bg-yellow-400 hover:bg-yellow-500 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
+                      className="cursor-pointer bg-yellow-400 hover:bg-yellow-500 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
                       aria-label={`แก้ไขอุปกรณ์ ${device.customCode}`}
                       title="แก้ไข"
                     >
@@ -810,10 +811,10 @@ export default function DeviceManager() {
                       </svg>
                     </button>
 
-                    {/* Delete - ไอคอนถังขยะ (Trash) */}
+                    {/* Delete */}
                     <button
                       onClick={() => handleDeleteClick(device.id)}
-                      className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
+                      className="cursor-pointer bg-red-600 hover:bg-red-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
                       aria-label={`ลบอุปกรณ์ ${device.customCode}`}
                       title="ลบ"
                     >
@@ -829,10 +830,10 @@ export default function DeviceManager() {
                       </svg>
                     </button>
 
-                    {/* สร้าง QR Code ใหม่ - ปรับให้เป็นปุ่มไอคอนเดียว */}
+                    {/* Regenerate QR */}
                     <button
                       onClick={() => regenerateQRCode(device.id)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
+                      className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
                       aria-label={`สร้าง QR Code ใหม่สำหรับอุปกรณ์ ${device.id}`}
                       title="สร้าง QR Code ใหม่"
                     >
@@ -852,7 +853,7 @@ export default function DeviceManager() {
                       </svg>
                     </button>
 
-                    {/* ปริ้นข้อมูล - ปรับให้เป็นปุ่มไอคอนเดียว */}
+                    {/* Print */}
                     <button
                       onClick={() =>
                         handlePrint(device.qrCode, {
@@ -865,7 +866,7 @@ export default function DeviceManager() {
                           location: device.location || "-",
                         })
                       }
-                      className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
+                      className="cursor-pointer bg-green-600 hover:bg-green-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
                       title="พิมพ์ข้อมูลอุปกรณ์"
                       aria-label={`พิมพ์ข้อมูลของอุปกรณ์ ${device.brand} รุ่น ${device.model}`}
                     >
@@ -888,6 +889,7 @@ export default function DeviceManager() {
 
 
 
+
                 </tr>
               ))
             )}
@@ -902,7 +904,7 @@ export default function DeviceManager() {
         <button
           onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
           disabled={currentPage === 1}
-          className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50"
+          className="cursor-pointer px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50"
         >
           ก่อนหน้า
         </button>
@@ -924,7 +926,7 @@ export default function DeviceManager() {
               <button
                 key={1}
                 onClick={() => setCurrentPage(1)}
-                className={`px-3 py-1 rounded border border-gray-300 ${currentPage === 1 ? "bg-blue-600 text-white" : "hover:bg-blue-100"}`}
+                className={`cursor-pointer px-3 py-1 rounded border border-gray-300 ${currentPage === 1 ? "bg-blue-600 text-white" : "hover:bg-blue-100"}`}
               >
                 1
               </button>
@@ -941,7 +943,7 @@ export default function DeviceManager() {
               <button
                 key={i}
                 onClick={() => setCurrentPage(i)}
-                className={`px-3 py-1 rounded border border-gray-300 ${currentPage === i ? "bg-blue-600 text-white" : "hover:bg-blue-100"}`}
+                className={`cursor-pointer px-3 py-1 rounded border border-gray-300 ${currentPage === i ? "bg-blue-600 text-white" : "hover:bg-blue-100"}`}
               >
                 {i}
               </button>
@@ -971,7 +973,7 @@ export default function DeviceManager() {
         <button
           onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
           disabled={currentPage === totalPages}
-          className="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50"
+          className="cursor-pointer px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 disabled:opacity-50"
         >
           ถัดไป
         </button>
