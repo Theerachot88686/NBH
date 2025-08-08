@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-1.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function DeviceManager() {
   const [devices, setDevices] = useState([]);
@@ -179,106 +179,108 @@ export default function DeviceManager() {
   };
 
 
-  const handlePrint = (qrSrc, deviceInfo = {}) => {
-    const {
-      id = "",
-      customCode = "",
-      brand = "",
-      model = "",
-      createdAt = "",
-      location = "",
-      type = "",
-      ipAddress = "",
-    } = deviceInfo;
+const handlePrint = (qrSrc, deviceInfo = {}) => {
+  const {
+    id = "",
+    customCode = "",
+    brand = "",
+    model = "",
+    createdAt = "",
+    location = "",
+    type = "",
+    ipAddress = "",
+  } = deviceInfo;
 
-    const locationText = location || "-";
-    const createdAtText = createdAt
-      ? new Date(createdAt).toLocaleDateString("th-TH", {
+  const locationText = location || "-";
+  const createdAtText = createdAt
+    ? new Date(createdAt).toLocaleDateString("th-TH", {
         year: "numeric",
         month: "short",
         day: "numeric",
       })
-      : "-";
+    : "-";
 
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(`
-      <html>
-        <head>
-          <style>
-            @page {
-              size: 50mm 30mm;
-              margin: 0;
-            }
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(`
+    <html>
+      <head>
+        <style>
+          @page {
+            size: 50mm 30mm;
+            margin: 0;
+          }
+          html, body {
+            margin: 0;
+            padding: 0;
+            width: 50mm;
+            height: 30mm;
+            box-sizing: border-box;
+            font-family: sans-serif;
+            background: #fff;
+          }
+          .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2mm;
+            box-sizing: border-box;
+            width: 50mm;
+            height: 30mm;
+          }
+          .qr {
+            width: 16mm;
+            height: 16mm;
+            object-fit: contain;
+            margin-left: 2mm;
+          }
+          .info {
+            font-size: 2.3mm;
+            line-height: 1.2;
+            max-width: 30mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .label {
+            font-weight: bold;
+          }
+          @media print {
             html, body {
               margin: 0;
               padding: 0;
               width: 50mm;
               height: 30mm;
               box-sizing: border-box;
-              font-family: sans-serif;
-              background: #fff;
             }
-            .container {
-              display: flex;
-              align-items: center;
-              padding: 2mm;
-              box-sizing: border-box;
-              width: 50mm;
-              height: 30mm;
-            }
-            .qr {
-              width: 16mm;
-              height: 16mm;
-              object-fit: contain;
-              margin-right: 2mm;
-            }
-            .info {
-              font-size: 2.3mm;
-              line-height: 1.2;
-              max-width: 30mm;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-            .label {
-              font-weight: bold;
-            }
-            @media print {
-              html, body {
-                margin: 0;
-                padding: 0;
-                width: 50mm;
-                height: 30mm;
-                box-sizing: border-box;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <img src="${qrSrc}" class="qr" alt="QR Code" />
-            <div class="info">
-              <div>${id}</div>
-              <div><span class="label">เลขคุมครุภัณฑ์:</span> ${customCode}</div>
-              <div><span class="label">ยี่ห้อ:</span> ${brand}</div>
-              <div><span class="label">รุ่น:</span> ${model}</div>
-              <div><span class="label">ประเภท:</span> ${type}</div>
-              <div><span class="label">IP Address:</span> ${ipAddress || "-"}</div>
-              <div><span class="label">ที่จัดเก็บ:</span> ${locationText}</div>
-              <div><span class="label">บันทึก:</span> ${createdAtText}</div>
-            </div>
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="info">
+            <div>${id}</div>
+            <div><span class="label">เลขคุมครุภัณฑ์:</span> ${customCode}</div>
+            <div><span class="label">ยี่ห้อ:</span> ${brand}</div>
+            <div><span class="label">รุ่น:</span> ${model}</div>
+            <div><span class="label">ประเภท:</span> ${type}</div>
+            <div><span class="label">IP Address:</span> ${ipAddress || "-"}</div>
+            <div><span class="label">ที่จัดเก็บ:</span> ${locationText}</div>
+            <div><span class="label">บันทึก:</span> ${createdAtText}</div>
           </div>
-          <script>
-            window.onload = () => {
-              window.print();
-              window.onafterprint = () => window.close();
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-  };
+          <img src="${qrSrc}" class="qr" alt="QR Code" />
+        </div>
+        <script>
+          window.onload = () => {
+            window.print();
+            window.onafterprint = () => window.close();
+          };
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
 
   const [sortConfig, setSortConfig] = useState({ key: "id", direction: "asc" });
   const handleSort = (key) => {
