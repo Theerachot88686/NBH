@@ -263,9 +263,7 @@ const handlePrint = (qrSrc, deviceInfo = {}) => {
             <div><span class="label">ยี่ห้อ:</span> ${brand}</div>
             <div><span class="label">รุ่น:</span> ${model}</div>
             <div><span class="label">ประเภท:</span> ${type}</div>
-            <div><span class="label">IP Address:</span> ${ipAddress || "-"}</div>
-            <div><span class="label">ที่จัดเก็บ:</span> ${locationText}</div>
-            <div><span class="label">บันทึก:</span> ${createdAtText}</div>
+            <div><span class="label">หน่วยงาน:</span> ${locationText}</div>
           </div>
           <img src="${qrSrc}" class="qr" alt="QR Code" />
         </div>
