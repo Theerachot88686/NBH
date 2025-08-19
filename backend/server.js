@@ -243,6 +243,12 @@ res.send(`
   }
 });
 
+
+app.get("/", (req, res) => {
+  res.send("✅ Server is running...");
+});
+
+
 // เริ่มเซิร์ฟเวอร์
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
