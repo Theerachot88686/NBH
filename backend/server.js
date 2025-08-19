@@ -6,7 +6,7 @@ require('dotenv').config();
 
 const prisma = new PrismaClient();
 const app = express();
-const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
+const baseUrl = process.env.BASE_URL || 'https://nbh-1.onrender.com';
 
 app.use(cors());
 app.use(express.json());
