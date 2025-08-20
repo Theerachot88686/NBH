@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://nbh-1.onrender.com";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function DeviceManager() {
   const [devices, setDevices] = useState([]);
@@ -179,103 +179,81 @@ export default function DeviceManager() {
   };
 
 
-const handlePrint = (qrSrc, deviceInfo = {}) => {
-  const {
-    id = "",
-    customCode = "",
-    brand = "",
-    model = "",
-    createdAt = "",
-    location = "",
-    type = "",
-    ipAddress = "",
-  } = deviceInfo;
-
-  const locationText = location || "-";
-  const createdAtText = createdAt
-    ? new Date(createdAt).toLocaleDateString("th-TH", {
+ const handlePrint = (qrSrc, deviceInfo = {}) => {
+  // แปลงค่าให้เป็น string และ fallback เป็น "-"
+  const id = deviceInfo.id ?? "-";
+  const customCode = deviceInfo.customCode ? String(deviceInfo.customCode).trim() || "-" : "-";
+  const brand = deviceInfo.brand ? String(deviceInfo.brand).trim() || "-" : "-";
+  const model = deviceInfo.model ? String(deviceInfo.model).trim() || "-" : "-";
+  const type = deviceInfo.type ? String(deviceInfo.type).trim() || "-" : "-";
+  const locationText = deviceInfo.location ? String(deviceInfo.location).trim() || "-" : "-";
+  
+  const createdAtText = deviceInfo.createdAt
+    ? new Date(deviceInfo.createdAt).toLocaleDateString("th-TH", {
         year: "numeric",
         month: "short",
         day: "numeric",
       })
     : "-";
 
+  console.log("Device Info for Print:", {
+    id, customCode, brand, model, type, locationText, createdAtText
+  });
+
   const printWindow = window.open("", "_blank");
-  printWindow.document.write(`
-    <html>
-      <head>
-        <style>
-          @page {
-            size: 50mm 30mm;
-            margin: 0;
-          }
-          html, body {
-            margin: 0;
-            padding: 0;
-            width: 50mm;
-            height: 30mm;
-            box-sizing: border-box;
-            font-family: sans-serif;
-            background: #fff;
-          }
-          .container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 2mm;
-            box-sizing: border-box;
-            width: 50mm;
-            height: 30mm;
-          }
-          .qr {
-            width: 16mm;
-            height: 16mm;
-            object-fit: contain;
-            margin-left: 2mm;
-          }
-          .info {
-            font-size: 2.3mm;
-            line-height: 1.2;
-            max-width: 30mm;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          .label {
-            font-weight: bold;
-          }
-          @media print {
-            html, body {
-              margin: 0;
-              padding: 0;
-              width: 50mm;
-              height: 30mm;
-              box-sizing: border-box;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="info">
-            <div>${id}</div>
-            <div><span class="label">เลขคุมครุภัณฑ์:</span> ${customCode}</div>
-            <div><span class="label">ยี่ห้อ:</span> ${brand}</div>
-            <div><span class="label">รุ่น:</span> ${model}</div>
-            <div><span class="label">ประเภท:</span> ${type}</div>
-            <div><span class="label">หน่วยงาน:</span> ${locationText}</div>
-          </div>
-          <img src="${qrSrc}" class="qr" alt="QR Code" />
+printWindow.document.write(`
+  <html>
+    <head>
+      <style>
+        @page { size: 50mm 30mm; margin: 0; }
+        html, body { margin:0; padding:0; width:50mm; height:30mm; font-family:sans-serif; }
+        .container {
+          display:flex;
+          align-items:center;
+          padding:1mm;           /* ลด padding */
+          width:50mm;
+          height:30mm;
+          box-sizing:border-box;
+        }
+        .qr {
+          width:16mm;
+          height:16mm;
+          object-fit:contain;
+          margin-right:0.5mm;    /* ลดระยะห่างกับรายละเอียด */
+        }
+        .info {
+          font-size:2.3mm;
+          line-height:1.2;
+          max-width:33mm;        /* เพิ่มพื้นที่ให้รายละเอียด */
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        }
+        .label { font-weight:bold; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <img src="${qrSrc}" class="qr" alt="QR Code" />
+        <div class="info">
+          <div>${id}</div>
+          <div><span class="label">เลขครุภัณฑ์:</span> ${customCode}</div>
+          <div><span class="label">ยี่ห้อ:</span> ${brand}</div>
+          <div><span class="label">รุ่น:</span> ${model}</div>
+          <div><span class="label">ประเภท:</span> ${type}</div>
+          <div><span class="label">หน่วยงาน:</span> ${locationText}</div>
         </div>
-        <script>
-          window.onload = () => {
-            window.print();
-            window.onafterprint = () => window.close();
-          };
-        </script>
-      </body>
-    </html>
-  `);
+      </div>
+      <script>
+        window.onload = () => {
+          window.print();
+          window.onafterprint = () => window.close();
+        };
+      </script>
+    </body>
+  </html>
+`);
+
   printWindow.document.close();
 };
 
@@ -854,37 +832,40 @@ const handlePrint = (qrSrc, deviceInfo = {}) => {
                     </button>
 
                     {/* Print */}
-                    <button
-                      onClick={() =>
-                        handlePrint(device.qrCode, {
-                          id: device.id,
-                          brand: device.brand,
-                          model: device.model,
-                          price: device.price,
-                          createdAt: device.createdAt,
-                          details: device.details || "-",
-                          location: device.location || "-",
-                        })
-                      }
-                      className="cursor-pointer bg-green-600 hover:bg-green-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
-                      title="พิมพ์ข้อมูลอุปกรณ์"
-                      aria-label={`พิมพ์ข้อมูลของอุปกรณ์ ${device.brand} รุ่น ${device.model}`}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M6 9v6m6-6v6m6-6v6M4 7h16M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7"
-                        />
-                      </svg>
-                    </button>
+<button
+  onClick={() =>
+    handlePrint(device.qrCode, {
+      id: device.id,
+      customCode: device.customCode || "-", // ✅ เพิ่มตรงนี้
+      type: device.type || "-",            // ✅ เพิ่มตรงนี้
+      brand: device.brand,
+      model: device.model,
+      price: device.price,
+      createdAt: device.createdAt,
+      details: device.details || "-",
+      location: device.location || "-",
+    })
+  }
+  className="cursor-pointer bg-green-600 hover:bg-green-700 text-white p-2 rounded-md shadow-md hover:shadow-lg transform hover:scale-110 transition duration-200 flex items-center justify-center"
+  title="พิมพ์ข้อมูลอุปกรณ์"
+  aria-label={`พิมพ์ข้อมูลของอุปกรณ์ ${device.brand} รุ่น ${device.model}`}
+>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-6 w-6"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2}
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M6 9v6m6-6v6m6-6v6M4 7h16M4 7v10a2 2 0 002 2h12a2 2 0 002-2V7"
+    />
+  </svg>
+</button>
+
                   </td>
 
 

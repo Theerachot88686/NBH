@@ -6,16 +6,30 @@ require('dotenv').config();
 
 const prisma = new PrismaClient();
 const app = express();
-const baseUrl = process.env.BASE_URL || 'https://nbh-1.onrender.com';
+const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
 
 app.use(cors());
 app.use(express.json());
 
 // ✅ ดึงข้อมูลทั้งหมด
+// ✅ ดึงข้อมูลทั้งหมด
 app.get('/api/devices', async (req, res) => {
   try {
     const devices = await prisma.device.findMany({
       orderBy: { id: 'desc' },
+      select: {
+        id: true,
+        brand: true,
+        model: true,
+        price: true,
+        createdAt: true,
+        details: true,
+        location: true,
+        customCode: true, // ✅ เพิ่ม
+        ipAddress: true,  // ✅ เพิ่ม
+        type: true,       // ✅ เพิ่ม
+        qrCode: true,
+      },
     });
     res.json(devices);
   } catch (error) {
@@ -23,6 +37,35 @@ app.get('/api/devices', async (req, res) => {
     res.status(500).json({ error: 'เกิดข้อผิดพลาดในการโหลดข้อมูลอุปกรณ์' });
   }
 });
+
+
+// ✅ ดึงข้อมูลอุปกรณ์ตาม id
+app.get('/api/devices', async (req, res) => {
+  try {
+    const devices = await prisma.device.findMany({
+      orderBy: { id: 'desc' },
+      select: {
+        id: true,
+        brand: true,
+        model: true,
+        price: true,
+        createdAt: true,
+        details: true,
+        location: true,
+        customCode: true, // ✅ เพิ่ม
+        ipAddress: true,  // ✅ เพิ่ม
+        type: true,       // ✅ เพิ่ม
+        qrCode: true,     // ถ้ามี QR
+      },
+    });
+    res.json(devices);
+  } catch (error) {
+    console.error('Error in GET /api/devices:', error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการโหลดข้อมูลอุปกรณ์' });
+  }
+});
+
+
 
 // ✅ สร้าง QR Code ใหม่
 app.post('/api/devices/:id/qrcode', async (req, res) => {
